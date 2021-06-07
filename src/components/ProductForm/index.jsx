@@ -1,29 +1,71 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { handleAlert } from "../../redux/action/alertAction/actions";
 import { fileListToBase64 } from "../../utilities/handleFile";
+import { convertToRaw, EditorState } from "draft-js";
+import { Editor } from "react-draft-wysiwyg";
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
+import draftToHtml from "draftjs-to-html";
+import { addProductRequest } from "../../redux/action/productAction/actions";
 const ProductForm = () => {
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
+    reset,
   } = useForm();
 
   const dispatch = useDispatch();
 
+  const categoryReducer = useSelector((state) => state.categoryReducer);
+  const { categoryList } = categoryReducer;
+
+  // EDITOR STATE
+  const [editorState, setEditorState] = useState(() =>
+    EditorState.createEmpty()
+  );
+
   //   IMAGES
   const [uploadedImages, setUploadedImages] = useState([]);
 
+  const [mainImage, setMainImage] = useState();
+
+  // IS RUNING
+  const [isRunning, setIsRunning] = useState(false);
+
   //   SUBMIT
-  const onSubmit = (data) => {
-    console.log(data);
-    checkStockIsLargerThan1();
+  const onSubmit = async (data) => {
+    const editorContent = convertToRaw(editorState.getCurrentContent());
+    const editorHTMLValue = draftToHtml(editorContent);
+    if (checkStockIsLargerThan1() && checkEditor()) {
+      setIsRunning(true);
+
+      const uploadedData = {
+        ...data,
+        description: editorHTMLValue,
+        mainImage: watch("mainImage"),
+        category: watch("category"),
+        additionalImages: watch("images"),
+        stock,
+      };
+      await dispatch(addProductRequest(uploadedData, resetForm));
+    }
   };
 
-  //   STOCK
-  const [stock, setStock] = useState([
+  const resetForm = () => {
+    reset();
+    resetStock();
+    setEditorState(EditorState.createEmpty());
+    setIsRunning(false);
+  };
+
+  const resetStock = () => {
+    setStock(initialStock);
+  };
+
+  const initialStock = [
     {
       size: "XS",
       count: 1,
@@ -48,7 +90,10 @@ const ProductForm = () => {
       size: "XXL",
       count: 0,
     },
-  ]);
+  ];
+
+  //   STOCK
+  const [stock, setStock] = useState(initialStock);
 
   //   UPDATE STOCK
   const updateStock = (idx, value) => {
@@ -66,14 +111,36 @@ const ProductForm = () => {
     );
   };
 
+  // CHECK EDITOR
+  const checkEditor = () => {
+    const editorContent = convertToRaw(editorState.getCurrentContent());
+    if (editorContent.blocks[0].text) return true;
+    dispatch(
+      handleAlert({ text: "Description can not be blank", status: "error" })
+    );
+  };
+
   //   TRANSFORM FILE LIST INTO IMAGE
   useEffect(() => {
     if (watch("images") && watch("images").length > 0) {
       fileListToBase64(watch("images")).then((arr) => {
         setUploadedImages(arr);
       });
+    } else {
+      setUploadedImages([]);
     }
   }, [watch("images")]);
+
+  //   TRANSFORM MAIN FILE LIST INTO MAIN IMAGE
+  useEffect(() => {
+    if (watch("mainImage") && watch("mainImage").length > 0) {
+      fileListToBase64(watch("mainImage")).then((arr) => {
+        setMainImage(arr[0]);
+      });
+    } else {
+      setMainImage("");
+    }
+  }, [watch("mainImage")]);
 
   return (
     <div className="mt-5">
@@ -116,16 +183,17 @@ const ProductForm = () => {
           {/*Category  */}
           <div className="flex flex-col  justify-start items-start ">
             <label className="font-bold text-sm">Category</label>
-            <input
-              {...register("category", { required: true })}
-              type="text"
-              placeholder="Category"
-              className={`border focus:outline-none ${
-                errors.category && "border-red-500"
-              } focus:border-fuchsia-500 rounded-3xl mb-3 md:mb-0 border-solid border-gray-200 px-3 py-2`}
-            />
-            {errors.category && errors.category.type === "required" && (
-              <p className="text-sm text-red-500">Category can not be blank</p>
+            {categoryList.length > 0 && (
+              <select
+                {...register("category", { required: true })}
+                className={`border focus:outline-none ${
+                  errors.category && "border-red-500"
+                } focus:border-fuchsia-500 rounded-3xl mb-3 md:mb-0 border-solid border-gray-200 px-3 py-2`}
+              >
+                {categoryList.map((item, idx) => (
+                  <option key={idx}>{item.name}</option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -149,7 +217,7 @@ const ProductForm = () => {
           </div>
         </div>
 
-        {/* ADD IMAGES BLOCK */}
+        {/* MAIN IMAGE */}
         <div className="mb-5 mt-5 md:flex flex-row justify-start items-start">
           <div className="md:mr-5 flex flex-col justify-start items-start">
             <div className="overflow-hidden relative w-28 cursor-pointer">
@@ -158,7 +226,7 @@ const ProductForm = () => {
                   errors.images ? "border-red-500" : "border-coolGray-300"
                 } py-3 w-full text-sm rounded text-coolGray-400 cursor-pointer`}
               >
-                Add image
+                Main image
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 inline-block w-6"
@@ -176,18 +244,76 @@ const ProductForm = () => {
               </button>
               <input
                 accept="image/*"
-                {...register("images", { required: true })}
+                {...register("mainImage", { required: true })}
+                className={`cursor-pointer absolute top-0 left-0 opacity-0 w-full h-full pin-r pin-t`}
+                type="file"
+                name="mainImage"
+                multiple
+              />
+            </div>
+            <small className="text-red-500">
+              {errors.mainImage && errors.mainImage.type === "required"
+                ? "Main image can not be blank"
+                : ""}
+            </small>
+          </div>
+          {mainImage ? (
+            <img src={mainImage} />
+          ) : (
+            <div className="h-36 w-28 flex justify-center items-center bg-gray-100">
+              No image
+            </div>
+          )}
+        </div>
+
+        {/* DESCRIPTION */}
+        <div className="mb-10 mt-5 md:flex flex-col justify-start items-start">
+          <label className="font-bold text-sm">Description</label>
+          <div className="border border-solid border-gray-200 p-4">
+            <Editor
+              editorState={editorState}
+              toolbarClassName="toolbarClassName"
+              wrapperClassName="wrapperClassName"
+              editorClassName="editorClassName"
+              onEditorStateChange={setEditorState}
+            />
+          </div>
+        </div>
+
+        {/* ADD IMAGES BLOCK */}
+        <div className="mb-5 mt-5 md:flex flex-row justify-start items-start">
+          <div className="md:mr-5 flex flex-col justify-start items-start">
+            <div className="overflow-hidden relative w-36 cursor-pointer">
+              <button
+                className={`border cursor-pointer border-solid ${
+                  errors.images ? "border-red-500" : "border-coolGray-300"
+                } py-3 w-full text-sm rounded text-coolGray-400 cursor-pointer`}
+              >
+                Additional image
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 inline-block w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+              <input
+                accept="image/*"
+                {...register("images")}
                 className={`cursor-pointer absolute top-0 left-0 opacity-0 w-full h-full pin-r pin-t`}
                 type="file"
                 name="images"
                 multiple
               />
             </div>
-            <small className="text-red-500">
-              {errors.images && errors.images.type === "required"
-                ? "Image can not be blank"
-                : ""}
-            </small>
           </div>
 
           {/* IMAGES DISPLAY */}
@@ -204,12 +330,27 @@ const ProductForm = () => {
           )}
         </div>
 
-        <button
-          type="submit"
-          className="mt-3 rounded bg-blue-600 text-white cursor-pointer focus:outline-none hover:bg-blue-500 px-4 py-2"
-        >
-          Save
-        </button>
+        {isRunning ? (
+          <button
+            disabled
+            type="submit"
+            className="mt-3 rounded flex flex-row justify-center  items-center bg-gray-300 text-white cursor-not-allowed focus:outline-none  px-4 py-4"
+          >
+            {[1, 2, 3].map((el, i) => (
+              <div
+                className="w-3 h-3 animate-bounce bg-white rounded-full mx-1"
+                key={i}
+              ></div>
+            ))}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="mt-3 rounded bg-blue-600 text-white cursor-pointer focus:outline-none hover:bg-blue-500 px-4 py-2"
+          >
+            Save
+          </button>
+        )}
       </form>
     </div>
   );

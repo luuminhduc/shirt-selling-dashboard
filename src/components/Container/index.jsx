@@ -14,7 +14,7 @@ const Container = ({ children }) => {
   }, [dispatch]);
 
   return (
-    <div className="text-blueGray-700">
+    <div className="text-blueGray-700 pb-10">
       <SideBar
         sideBarActive={sideBarActive}
         setSideBarActive={setSideBarActive}
