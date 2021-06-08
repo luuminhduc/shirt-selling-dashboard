@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { fetchCategoryList } from "../../redux/action/categoryAction/actions";
+import { fetchProductList } from "../../redux/action/productAction/actions";
 import Header from "../Header";
 import SideBar from "../SideBar";
 
@@ -10,6 +11,7 @@ const Container = ({ children }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    dispatch(fetchProductList());
     dispatch(fetchCategoryList());
   }, [dispatch]);
 
