@@ -1,7 +1,11 @@
 import React from "react";
+import { useDispatch } from "react-redux";
 import { NavLink } from "react-router-dom";
+import { showModal } from "../../redux/action/modalAction/actions";
+import { deleteProduct } from "../../redux/action/productAction/actions";
 
 const ProductTBody = ({ list }) => {
+  const dispatch = useDispatch();
   return (
     <tbody className="bg-white divide-y divide-gray-200">
       {list.map((item, idx) => (
@@ -44,7 +48,19 @@ const ProductTBody = ({ list }) => {
                 />
               </svg>
             </NavLink>
-            <button className="font-semibold inline-block">
+            <button
+              className="focus:outline-none"
+              onClick={() =>
+                dispatch(
+                  showModal({
+                    title: "Delete product",
+                    text: "Are you sure you want to delete this data",
+                    callback: () => dispatch(deleteProduct(item.id)),
+                  })
+                )
+              }
+              className="font-semibold inline-block"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-4 w-4"

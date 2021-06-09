@@ -8,7 +8,7 @@ export const hideModal = () => {
 
 export const showModal = (object) => {
     return{
-        type: actions.HIDE_MODAL,
+        type: actions.SHOW_MODAL,
         payload:object,
     }
 }

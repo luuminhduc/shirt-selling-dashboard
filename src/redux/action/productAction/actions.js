@@ -90,3 +90,14 @@ export const sortProductByName = (term )=> {
         payload:term,
     }
 }
+
+export const deleteProduct = (id) => async (dispatch, getState, {getFirebase, getFirestore}) => {
+    const firestore = getFirestore();
+    firestore.collection('products').doc(id).delete()
+    .then(() => {
+        dispatch(handleAlert({text:"A product is deleted",status:"success"}))
+    })
+    .catch(err => {
+        dispatch(handleAlert({text:err.message,status:"error"}))
+    })
+}

@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { fetchCategoryList } from "../../redux/action/categoryAction/actions";
 import { fetchProductList } from "../../redux/action/productAction/actions";
 import Header from "../Header";
+import Modal from "../Modal";
 import SideBar from "../SideBar";
 
 const Container = ({ children }) => {
@@ -27,6 +28,7 @@ const Container = ({ children }) => {
         }`}
       >
         <Header />
+        <Modal />
         {children}
       </div>
     </div>
