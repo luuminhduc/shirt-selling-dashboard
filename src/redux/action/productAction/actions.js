@@ -69,3 +69,24 @@ export const fetchProductList = () => async (dispatch, getState, {getFirebase, g
    
 }
 
+export const searchProduct = (term) => {
+    return{
+        type: actions.SEARCH_PRODUCT,
+        payload:term,
+    }
+}
+
+
+export const sortProductByPrice = (term )=> {
+    return{
+        type: actions.SORT_PRODUCT_BY_PRICE,
+        payload:term,
+    }
+}
+
+export const sortProductByName = (term )=> {
+    return{
+        type: actions.SORT_PRODUCT_BY_NAME,
+        payload:term,
+    }
+}

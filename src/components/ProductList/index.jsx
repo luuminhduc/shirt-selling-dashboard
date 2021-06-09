@@ -1,10 +1,80 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { NavLink } from "react-router-dom";
+import {
+  sortProductByName,
+  sortProductByPrice,
+} from "../../redux/action/productAction/actions";
+import ProductTBody from "../ProductTBody";
+import SearchProduct from "../SearchProduct";
 
 const ProductList = () => {
   const productReducer = useSelector((state) => state.productReducer);
-  const { productList } = productReducer;
+  const { productList, searchTerm, sortTerm, sortTermName } = productReducer;
+  const [list, setList] = useState(productList);
+  const dispatch = useDispatch();
+  const processSearchTerm = () => {
+    return setList(
+      productList.filter(
+        (item) => item.name.toUpperCase().indexOf(searchTerm.toUpperCase()) > -1
+      )
+    );
+  };
+
+  useEffect(() => {
+    setList(productList);
+  }, [productList]);
+
+  useEffect(() => {
+    processSortTerm();
+  }, [sortTerm]);
+  useEffect(() => {
+    processSortTermName();
+  }, [sortTermName]);
+  useEffect(() => {
+    processSearchTerm();
+  }, [searchTerm]);
+
+  const processSortTerm = () => {
+    switch (sortTerm) {
+      case "asc":
+        setList([...list.sort((a, b) => +a.price - +b.price)]);
+        break;
+      case "desc":
+        setList([...list.sort((a, b) => +b.price - +a.price)]);
+        break;
+      default:
+    }
+  };
+
+  const processSortTermName = () => {
+    switch (sortTermName) {
+      case "asc":
+        setList([
+          ...list.sort(
+            (a, b) =>
+              getFirstLetter(a.name).charCodeAt(0) -
+              getFirstLetter(b.name).charCodeAt(0)
+          ),
+        ]);
+        break;
+      case "desc":
+        setList([
+          ...list.sort(
+            (a, b) =>
+              getFirstLetter(b.name).charCodeAt(0) -
+              getFirstLetter(a.name).charCodeAt(0)
+          ),
+        ]);
+        break;
+      default:
+    }
+  };
+
+  const getFirstLetter = (string) => {
+    return string.split("")[0].toUpperCase();
+  };
+
   return (
     <div>
       {productList.length > 0 && (
@@ -12,22 +82,95 @@ const ProductList = () => {
           <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
             <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
               <div className="shadow p-5 overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                <div className="mb-5">dsds</div>
-                <table className="min-w-full divide-y divide-gray-200">
+                <div className="mb-5">
+                  <SearchProduct />
+                </div>
+                <table className="min-w-full ">
                   <thead className="bg-gray-50">
                     <tr>
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Name
+                        <div className="flex flex-row justify-start items-center">
+                          <span>Name</span>
+                          <div className=" text-gray-400 inline-block">
+                            <svg
+                              onClick={() => dispatch(sortProductByName("asc"))}
+                              xmlns="http://www.w3.org/2000/svg"
+                              className={`h-4 w-4 cursor-pointer ${
+                                sortTermName === "asc" && "text-orange-500"
+                              } hover:text-orange-600`}
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <svg
+                              onClick={() =>
+                                dispatch(sortProductByName("desc"))
+                              }
+                              xmlns="http://www.w3.org/2000/svg"
+                              className={`h-4 w-4 cursor-pointer ${
+                                sortTermName === "desc" && "text-orange-500"
+                              } hover:text-orange-600`}
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </th>
+
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        className="px-6 py-3 flex flex-row justify-start items-center text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Price
+                        <span>Price</span>
+                        {/* SORT PRICE ICON */}
+                        <div className=" flex flex-col items-center justify-center text-gray-400 ml">
+                          <svg
+                            onClick={() => dispatch(sortProductByPrice("asc"))}
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-4 w-4 cursor-pointer ${
+                              sortTerm === "asc" && "text-orange-500"
+                            } hover:text-orange-600`}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <svg
+                            onClick={() => dispatch(sortProductByPrice("desc"))}
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={`h-4 w-4 cursor-pointer ${
+                              sortTerm === "desc" && "text-orange-500"
+                            } hover:text-orange-600`}
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </div>
                       </th>
+
                       <th
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -46,71 +189,7 @@ const ProductList = () => {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {productList.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="">
-                              <div className="text-sm font-medium text-gray-900">
-                                {item.name}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {item.price}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            <img src={item.mainImage} className="w-10" alt="" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {item.category}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <NavLink to="/" className="mr-2 inline-block">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 "
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                              />
-                            </svg>
-                          </NavLink>
-                          <button className="font-semibold inline-block">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>{" "}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                  <ProductTBody list={list} />
                 </table>
               </div>
             </div>
